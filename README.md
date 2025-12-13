@@ -1,13 +1,42 @@
-# 🏠 Home Assistant MCP
+# 🏠 Home Assistant MCP (Zipties Fork)
 
-[![smithery badge](https://smithery.ai/badge/@jango-blockchained/advanced-homeassistant-mcp)](https://smithery.ai/server/@jango-blockchained/advanced-homeassistant-mcp)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/@jango-blockchained/homeassistant-mcp.svg)](https://www.npmjs.com/package/@jango-blockchained/homeassistant-mcp)
-[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue.svg)](https://github.com/jango-blockchained/advanced-homeassistant-mcp/pkgs/container/advanced-homeassistant-mcp)
 [![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.26-black)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/typescript-%5E5.0.0-blue.svg)](https://www.typescriptlang.org)
 
 > **Bridge the gap between AI assistants and your smart home** 🚀
+
+---
+
+## 🍴 Fork Notice
+
+This is a fork of [jango-blockchained/advanced-homeassistant-mcp](https://github.com/jango-blockchained/advanced-homeassistant-mcp) with additional tools and fixes developed for use with [Claude Code](https://claude.ai).
+
+### Why This Fork?
+
+The original MCP server is excellent, but while integrating it into my homelab automation workflow, I discovered missing functionality and edge cases that needed addressing. Rather than just patching locally, I've consolidated these improvements into a fork that can be used by others.
+
+### What's Added/Fixed
+
+#### New Tools
+
+| Tool | Description |
+|------|-------------|
+| `trace` | WebSocket-based automation/script trace debugging. List traces, get detailed execution data, inspect trace contexts. Essential for debugging why automations didn't fire. |
+| `switch_control` | Full switch entity control (list, get, turn_on, turn_off, toggle). Works with smart plugs, relays, virtual switches. |
+| `get_entity_state` | Generic state retrieval for ANY entity type (sensors, binary_sensors, switches, lights, climate, covers, etc.). Supports optional attribute inclusion for minimal responses. |
+
+#### Fixes & Improvements
+
+- **automation_config CRUD**: Fixed REST API paths (`/api/config/automation/config/{id}`), corrected HTTP methods (POST for both create AND update), added duplicate ID guard, added input normalization (auto-strips `automation.` prefix)
+- **Improved tool descriptions**: Added explicit examples and ID format clarification to prevent first-try failures with Claude
+- **Input normalization**: Tools now gracefully handle entity_id vs internal ID confusion by auto-stripping domain prefixes
+
+### Upstream Compatibility
+
+This fork tracks upstream and can be rebased. PRs for universally useful improvements will be submitted upstream.
+
+---
 
 A powerful, secure, and extensible Model Context Protocol (MCP) server that enables AI assistants like Claude, GPT, and Cursor to seamlessly interact with Home Assistant. Control your lights, climate, automations, and more through natural language commands.
 
