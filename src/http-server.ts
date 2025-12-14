@@ -232,6 +232,7 @@ async function main(): Promise<void> {
         transportType: "httpStream",
         httpStream: {
           port: port,
+          host: "0.0.0.0", // Bind to all interfaces for Docker networking
           endpoint: "/mcp",
           // Enable stateless mode for serverless/load-balanced deployments
           stateless: isStateless,
