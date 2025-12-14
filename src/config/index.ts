@@ -73,6 +73,13 @@ function validateConfig() {
 // Export configuration validation
 export const validateConfiguration = validateConfig;
 
+// OAuth Configuration
+export {
+  OAUTH_CONFIG,
+  validateOAuthConfig,
+  getProtectedResourceMetadata,
+} from "./oauth.config";
+
 // Export all configurations as a single object
 export const AppConfig = {
   HASS: HASS_CONFIG,

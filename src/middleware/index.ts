@@ -256,6 +256,14 @@ export const errorHandler = (
   return res.status(500).json(response);
 };
 
+// OAuth 2.1 Resource Server middleware
+export {
+  createOAuthDiscoveryRouter,
+  createOAuthMiddleware,
+  oauthAuthMiddleware,
+  requireScopes,
+} from "./oauth-resource-server";
+
 // Export all middleware
 export const middleware = {
   rateLimiter,

@@ -22,6 +22,11 @@ import { getAllPrompts, renderPrompt } from "./mcp/prompts";
 import express, { type Request, type Response } from "express";
 import http from "http";
 
+// OAuth 2.1 Resource Server support
+import { OAUTH_CONFIG, validateOAuthConfig } from "./config/oauth.config";
+import { getOIDCValidator } from "./security/oidc-validator";
+import { createOAuthDiscoveryRouter, createOAuthMiddleware } from "./middleware/oauth-resource-server";
+
 const port = (process.env.PORT ?? "7123") ? parseInt(process.env.PORT ?? "7123", 10) : 7123;
 const isScanning = process.env.SMITHERY_SCAN === "true";
 const isStateless = process.env.FASTMCP_STATELESS === "true" || process.env.SMITHERY_STATELESS === "true";
@@ -65,6 +70,15 @@ async function main(): Promise<void> {
   try {
     logger.info(`Starting server initialization on port ${port}`);
     logger.info(`Initializing FastMCP server with HTTP transport${isScanning ? " (scan mode)" : ""}${isStateless ? " (stateless mode)" : ""}...`);
+
+    // Initialize OAuth 2.1 Resource Server if enabled
+    if (OAUTH_CONFIG.ENABLED) {
+      logger.info("OAuth 2.1 mode enabled, initializing OIDC validator...");
+      validateOAuthConfig();
+      const validator = getOIDCValidator();
+      await validator.initialize();
+      logger.info(`OAuth initialized with issuer: ${OAUTH_CONFIG.ISSUER}`);
+    }
 
     // Create the FastMCP server instance following v3.24.0 best practices
     const server = new FastMCP({
@@ -222,6 +236,13 @@ async function main(): Promise<void> {
           // Enable stateless mode for serverless/load-balanced deployments
           stateless: isStateless,
           middleware: (app: express.Application) => {
+            // OAuth 2.1 Protected Resource Metadata (RFC 9728)
+            // Must come before auth middleware so discovery is public
+            if (OAUTH_CONFIG.ENABLED) {
+              app.use(createOAuthDiscoveryRouter());
+              logger.info("OAuth discovery endpoint enabled at /.well-known/oauth-protected-resource");
+            }
+
             // MCP config endpoint for Smithery discovery
             app.get("/.well-known/mcp-config", (_req, res) => {
               res.json({
@@ -233,7 +254,7 @@ async function main(): Promise<void> {
                 },
               });
             });
-            
+
             // Ready endpoint for orchestration
             app.get("/ready", (_req, res) => {
               res.json({
@@ -241,8 +262,17 @@ async function main(): Promise<void> {
                 ready: 1,
                 total: 1,
                 mode: isStateless ? "stateless" : "stateful",
+                oauth: OAUTH_CONFIG.ENABLED,
               });
             });
+
+            // OAuth 2.1 authentication middleware
+            // Applied to all routes except public paths (handled internally)
+            if (OAUTH_CONFIG.ENABLED) {
+              const oauthMiddleware = createOAuthMiddleware();
+              app.use(oauthMiddleware);
+              logger.info("OAuth authentication middleware enabled");
+            }
           },
         },
       });
@@ -258,7 +288,14 @@ async function main(): Promise<void> {
     logger.info(`✓ MCP endpoint available at http://localhost:${port}/mcp`);
     logger.info(`✓ SSE endpoint available at http://localhost:${port}/sse`);
     logger.info(`✓ Server transport: HTTP Stream (FastMCP 3.24.0${isStateless ? ", stateless" : ""})`);
-    logger.info(`✓ Ready for Smithery.ai hosted deployment`);
+    if (OAUTH_CONFIG.ENABLED) {
+      logger.info(`✓ OAuth 2.1 Resource Server enabled`);
+      logger.info(`✓ OAuth discovery at http://localhost:${port}/.well-known/oauth-protected-resource`);
+      logger.info(`✓ Authorization Server: ${OAUTH_CONFIG.ISSUER}`);
+      logger.info(`✓ Ready for Claude.ai remote MCP connector`);
+    } else {
+      logger.info(`✓ Ready for Smithery.ai hosted deployment`);
+    }
 
     // Graceful shutdown handler
     const shutdown = (): void => {
